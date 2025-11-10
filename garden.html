@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(160deg, hsl(240, 64%, 94%), #beb7ff, #d3d8ff);
+    background-size: 300% 300%;
+    animation: skyShift 25s ease-in-out infinite alternate;
+  }
+  @keyframes skyShift {
+    from { background-position: 0 0; }
+    to { background-position: 100% 100%; }
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  h1 {
+    position: absolute;
+    top: 15px;
+    width: 100%;
+    text-align: center;
+    font-family: "Comic Sans MS", cursive;
+    font-size: 2em;
+    color: #2b2bf0;
+    text-shadow: 0 0 15px #ffb6ff, 0 0 25px #ff99cc;
+  }
+  .message {
+    position: absolute;
+    color: #111111;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(76, 87, 248, 0.9), 0 0 20px #ffc6ff;
+    animation: fadeIn 1s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.8); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ✨ Chuyển dòng chữ gợi ý lên trên ✨ */
+  .hint {
+    position: absolute;
+    top: 20px;               /* từ bottom:25px → top:20px */
+    width: 100%;
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 10px #ffc2f5, 0 0 25px #ffb3ff;
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  @keyframes glow {
+    from { opacity: 0.8; text-shadow: 0 0 5px #ffd6ff; }
+    to { opacity: 1; text-shadow: 0 0 25px #ff99ff; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<!-- 💫 Di chuyển dòng chữ hướng dẫn lên đầu trang -->
+<div class="hint">Bấm vào ngôi sao đi nào người đẹp</div>
+
+<script>
+const canvas = document.getElementById('sky');
+const ctx = canvas.getContext('2d');
+let stars = [];
+const colors = [
+  '#ff7eb9', '#ff65a3', '#f8c8dc',
+  '#ffa6c1', '#fcbad3', '#b5ead7',
+  '#c7ceea', '#ffb6b9', '#f6abb6'
+];
+const wishes = [
+  "Chaizo chaizo!!(*•̀ᴗ•́*)و ̑̑",
+  "Hãy cười thật tươi lên nhé chị đẹp",
+  "Mọi điều tốt đẹp sẽ đến , mọi chuyện buồn sẽ biến đi",
+  "Hãy thật chill nhé baby à",
+  "Yêu chị lắm á nhenn",
+  "moah moah moah :>>",
+  "Chị là nhất đấy nhé! 🌟",
+  "¯\\(◉‿◉)/¯",
+  "Darling luôn được yêu thương 🤍(つ✧ω✧)つ",
+  "(´ω `♡)",
+  "ヽ(>∀<☆)ノ",
+  "(≧◡≦)",
+  "(´｡• ω •｡`)",
+  "(｡♥‿♥｡)",
+  "(⁄⁄•⁄ω⁄•⁄⁄)♡",
+  "(づ￣ ³￣)づ",
+  "( ˘ ³˘)♥",
+  "(´• ω •`) ♡",
+  "(⁎˃ᆺ˂)",
+  "(｡♥‿♥｡)",
+  "(´｡• ᵕ •｡`)",
+  "(♡°▽°♡)",
+  "(´▽`ʃ♡ƪ)",
+  "(≧ω≦)",
+  "(っ˘ω˘ς)",
+  "(灬º‿º灬)♡",
+  "(*/ω＼*)"
+
+];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+class Star {
+  constructor(x, y, r, color) {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.color = color;
+    this.alpha = Math.random() * 0.5 + 0.6;
+    this.fade = Math.random() * 0.02 + 0.005;
+    this.speedX = (Math.random() - 0.5) * 0.15;
+    this.speedY = (Math.random() - 0.5) * 0.15;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    drawStar(ctx, this.x, this.y, 5, this.r, this.r / 2);
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+  }
+  update() {
+    this.alpha += this.fade;
+    if (this.alpha <= 0.5 || this.alpha >= 1) this.fade *= -1;
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.x < 0) this.x = canvas.width;
+    if (this.x > canvas.width) this.x = 0;
+    if (this.y < 0) this.y = canvas.height;
+    if (this.y > canvas.height) this.y = 0;
+  }
+}
+
+function drawStar(ctx, x, y, points, outer, inner) {
+  ctx.beginPath();
+  const step = Math.PI / points;
+  for (let i = 0; i < 2 * points; i++) {
+    const r = (i % 2 === 0) ? outer : inner;
+    const a = i * step - Math.PI / 2;
+    ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+function initStars() {
+  stars = [];
+  const count = 70; // ít hơn, nhưng sao to hơn
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const r = Math.random() * 20 + 15; // TO hơn
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    stars.push(new Star(x, y, r, color));
+  }
+}
+initStars();
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const s of stars) {
+    s.update();
+    s.draw();
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Click -> hiện lời chúc
+canvas.addEventListener('click', e => {
+  const { offsetX, offsetY } = e;
+  for (let s of stars) {
+    const dx = s.x - offsetX;
+    const dy = s.y - offsetY;
+    if (Math.sqrt(dx * dx + dy * dy) < s.r + 10) {
+      showWish(s.x, s.y);
+      s.alpha = 1;
+      s.shadowBlur = 20;
+      setTimeout(() => s.shadowBlur = 6, 1000);
+      break;
+    }
+  }
+});
+
+function showWish(x, y) {
+  const msg = document.createElement('div');
+  msg.className = 'message';
+  msg.textContent = wishes[Math.floor(Math.random() * wishes.length)];
+  msg.style.left = (x - 90 + Math.random() * 50) + 'px';
+  msg.style.top = (y - 60 - Math.random() * 30) + 'px';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 4000);
+}
+</script>
+</body>
+</html>
